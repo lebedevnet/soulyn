@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { signOutAction } from "@/app/actions";
 
 type AppNavigationProps = {
   pathname: string;
@@ -41,17 +40,6 @@ export default function AppNavigation({ pathname }: AppNavigationProps) {
           </Link>
         );
       })}
-
-      <div className="ml-auto" />
-
-      <form action={signOutAction}>
-        <button
-          type="submit"
-          className="rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white/70 transition hover:border-white/25 hover:text-white"
-        >
-          Log out
-        </button>
-      </form>
     </nav>
   );
 }
