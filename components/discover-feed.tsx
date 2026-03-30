@@ -1,0 +1,245 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+type DiscoverCandidate = {
+  id: string;
+  name: string;
+  age: number;
+  city: string;
+  lookingFor: string;
+  games: string[];
+  vibeTags: string[];
+  bio: string;
+  compatibility: number;
+};
+
+const demoCandidates: DiscoverCandidate[] = [
+  {
+    id: "1",
+    name: "Mira",
+    age: 22,
+    city: "Sofia",
+    lookingFor: "late-night chat, duo games, relationship",
+    games: ["Valorant", "Genshin Impact", "Minecraft"],
+    vibeTags: ["introvert", "comfort talk", "soft energy"],
+    bio: "Usually online at night. I like calm conversations, co-op games, and people who do not force fast communication.",
+    compatibility: 92,
+  },
+  {
+    id: "2",
+    name: "Kai",
+    age: 24,
+    city: "Warsaw",
+    lookingFor: "duo queue, memes, online connection",
+    games: ["League of Legends", "Overwatch 2", "Lethal Company"],
+    vibeTags: ["ironic", "night owl", "memes"],
+    bio: "I am here for someone with the same online rhythm. I like irony, low-pressure chats, and chaotic co-op sessions.",
+    compatibility: 87,
+  },
+  {
+    id: "3",
+    name: "Yuna",
+    age: 21,
+    city: "Prague",
+    lookingFor: "friendship, fandom talks, maybe something deeper",
+    games: ["Stardew Valley", "The Sims 4", "Honkai: Star Rail"],
+    vibeTags: ["fandom", "cozy", "deep talks"],
+    bio: "I like long messages, anime, music, and people who can switch from memes to serious talks in one minute.",
+    compatibility: 84,
+  },
+  {
+    id: "4",
+    name: "Ren",
+    age: 23,
+    city: "Berlin",
+    lookingFor: "voice chat, duo games, comfort connection",
+    games: ["Apex Legends", "Phasmophobia", "Minecraft"],
+    vibeTags: ["voice first", "low energy", "warm vibe"],
+    bio: "I open up slowly, but I value consistency. Mostly here for one real connection instead of random small talk.",
+    compatibility: 81,
+  },
+];
+
+type DiscoverFeedProps = {
+  currentUserName: string;
+  currentUserGames: string[];
+  currentUserVibes: string[];
+};
+
+export default function DiscoverFeed({
+  currentUserName,
+  currentUserGames,
+  currentUserVibes,
+}: DiscoverFeedProps) {
+  const [index, setIndex] = useState(0);
+  const [likedCount, setLikedCount] = useState(0);
+  const [passedCount, setPassedCount] = useState(0);
+
+  const currentCandidate = demoCandidates[index] ?? null;
+  const remainingCount = Math.max(demoCandidates.length - index - 1, 0);
+
+  const summary = useMemo(() => {
+    return {
+      currentUserGames:
+        currentUserGames.length > 0 ? currentUserGames.join(", ") : "No games added yet",
+      currentUserVibes:
+        currentUserVibes.length > 0 ? currentUserVibes.join(", ") : "No vibe tags added yet",
+    };
+  }, [currentUserGames, currentUserVibes]);
+
+  function handlePass() {
+    if (!currentCandidate) {
+      return;
+    }
+
+    setPassedCount((value) => value + 1);
+    setIndex((value) => value + 1);
+  }
+
+  function handleLike() {
+    if (!currentCandidate) {
+      return;
+    }
+
+    setLikedCount((value) => value + 1);
+    setIndex((value) => value + 1);
+  }
+
+  function handleReset() {
+    setIndex(0);
+    setLikedCount(0);
+    setPassedCount(0);
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-white/45">Discover feed</p>
+            <h2 className="mt-2 text-2xl font-semibold">Profile recommendations</h2>
+          </div>
+
+          <div className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/65">
+            {index < demoCandidates.length
+              ? `${remainingCount + 1} cards left`
+              : "No cards left"}
+          </div>
+        </div>
+
+        {currentCandidate ? (
+          <div className="mt-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-sm text-white/45">Suggested profile</p>
+                <h3 className="mt-2 text-3xl font-semibold">
+                  {currentCandidate.name}, {currentCandidate.age}
+                </h3>
+                <p className="mt-2 text-white/55">{currentCandidate.city}</p>
+              </div>
+
+              <div className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/75">
+                {currentCandidate.compatibility}% compatibility
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <div className="rounded-2xl bg-white/5 p-4">
+                <p className="text-sm text-white/45">Looking for</p>
+                <p className="mt-2 text-white/85">{currentCandidate.lookingFor}</p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4">
+                <p className="text-sm text-white/45">Games</p>
+                <p className="mt-2 text-white/85">
+                  {currentCandidate.games.join(", ")}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4">
+                <p className="text-sm text-white/45">Vibe tags</p>
+                <p className="mt-2 text-white/85">
+                  {currentCandidate.vibeTags.join(", ")}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4">
+                <p className="text-sm text-white/45">Bio</p>
+                <p className="mt-2 text-white/75">{currentCandidate.bio}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handlePass}
+                className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/80 transition hover:border-white/30 hover:text-white"
+              >
+                Pass
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLike}
+                className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+              >
+                Like
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm text-white/45">Queue finished</p>
+            <h3 className="mt-2 text-2xl font-semibold">No more demo profiles</h3>
+            <p className="mt-3 max-w-xl text-white/60">
+              You reached the end of the current recommendation queue. For now this
+              is a local prototype feed. Later we will replace it with real profiles
+              from the database.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleReset}
+              className="mt-6 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+            >
+              Restart feed
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-sm text-white/45">Current user</p>
+          <p className="mt-2 text-lg font-semibold">{currentUserName}</p>
+          <p className="mt-3 text-sm leading-6 text-white/60">
+            This panel uses your real profile data and will later affect matching.
+          </p>
+        </div>
+
+        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-sm text-white/45">Your games</p>
+          <p className="mt-2 text-white/80">{summary.currentUserGames}</p>
+        </div>
+
+        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-sm text-white/45">Your vibe tags</p>
+          <p className="mt-2 text-white/80">{summary.currentUserVibes}</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm text-white/45">Liked</p>
+            <p className="mt-2 text-2xl font-semibold">{likedCount}</p>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm text-white/45">Passed</p>
+            <p className="mt-2 text-2xl font-semibold">{passedCount}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
