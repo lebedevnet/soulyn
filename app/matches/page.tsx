@@ -1,9 +1,12 @@
 import Link from "next/link";
+import AppNavigation from "@/components/app-navigation";
 
 export default function MatchesPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white sm:px-8 lg:px-10">
       <div className="mx-auto max-w-5xl">
+        <AppNavigation />
+
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-white/40">
