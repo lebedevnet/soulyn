@@ -1,8 +1,19 @@
 import { redirect } from "next/navigation";
 import AppShell from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
+import { saveProfileAction } from "@/app/profile/actions";
 
-export default async function ProfilePage() {
+type ProfilePageProps = {
+  searchParams: Promise<{
+    saved?: string;
+    error?: string;
+  }>;
+};
+
+export default async function ProfilePage({
+  searchParams,
+}: ProfilePageProps) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -27,37 +38,149 @@ export default async function ProfilePage() {
     >
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6">
-          <p className="text-sm text-white/45">Account</p>
-          <h2 className="mt-2 text-2xl font-semibold">Current user</h2>
+          <p className="text-sm text-white/45">Edit profile</p>
+          <h2 className="mt-2 text-2xl font-semibold">
+            {profile ? "Update your profile" : "Create your profile"}
+          </h2>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-white/5 p-4">
-              <p className="text-sm text-white/45">User ID</p>
-              <p className="mt-2 break-all text-sm text-white/80">{user.id}</p>
+          <form action={saveProfileAction} className="mt-6 space-y-4">
+            <div>
+              <label
+                htmlFor="username"
+                className="mb-2 block text-sm text-white/55"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                defaultValue={profile?.username ?? ""}
+                placeholder="nightowl"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+              />
             </div>
 
-            <div className="rounded-2xl bg-white/5 p-4">
-              <p className="text-sm text-white/45">Email</p>
-              <p className="mt-2 text-white/80">{user.email ?? "No email"}</p>
+            <div>
+              <label
+                htmlFor="display_name"
+                className="mb-2 block text-sm text-white/55"
+              >
+                Display name
+              </label>
+              <input
+                id="display_name"
+                name="display_name"
+                defaultValue={profile?.display_name ?? ""}
+                placeholder="Night Owl"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+              />
             </div>
 
-            <div className="rounded-2xl bg-white/5 p-4">
-              <p className="text-sm text-white/45">Email confirmed</p>
-              <p className="mt-2 text-white/80">
-                {user.email_confirmed_at ? "Yes" : "No"}
-              </p>
+            <div>
+              <label
+                htmlFor="looking_for"
+                className="mb-2 block text-sm text-white/55"
+              >
+                Looking for
+              </label>
+              <input
+                id="looking_for"
+                name="looking_for"
+                defaultValue={profile?.looking_for ?? ""}
+                placeholder="late-night chat, duo games, relationship"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+              />
             </div>
 
-            <div className="rounded-2xl bg-white/5 p-4">
-              <p className="text-sm text-white/45">Profile record</p>
-              <p className="mt-2 text-white/80">
-                {profile ? "Exists" : "Not created yet"}
-              </p>
+            <div>
+              <label
+                htmlFor="favorite_games"
+                className="mb-2 block text-sm text-white/55"
+              >
+                Favorite games
+              </label>
+              <input
+                id="favorite_games"
+                name="favorite_games"
+                defaultValue={profile?.favorite_games?.join(", ") ?? ""}
+                placeholder="Valorant, Minecraft, Genshin Impact"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+              />
             </div>
-          </div>
+
+            <div>
+              <label
+                htmlFor="vibe_tags"
+                className="mb-2 block text-sm text-white/55"
+              >
+                Vibe tags
+              </label>
+              <input
+                id="vibe_tags"
+                name="vibe_tags"
+                defaultValue={profile?.vibe_tags?.join(", ") ?? ""}
+                placeholder="introvert, ironic, comfort talk, soft energy"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="bio"
+                className="mb-2 block text-sm text-white/55"
+              >
+                Bio
+              </label>
+              <textarea
+                id="bio"
+                name="bio"
+                defaultValue={profile?.bio ?? ""}
+                placeholder="A few words about yourself, your vibe, and how you like to communicate."
+                rows={5}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+            >
+              {profile ? "Save changes" : "Create profile"}
+            </button>
+          </form>
         </div>
 
         <div className="space-y-4">
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm text-white/45">Account</p>
+            <p className="mt-2 text-white/80">{user.email ?? "No email"}</p>
+            <p className="mt-3 text-sm leading-6 text-white/60">
+              Текущий авторизованный пользователь.
+            </p>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm text-white/45">Profile record</p>
+            <p className="mt-2 text-white/80">
+              {profile ? "Exists in database" : "Not created yet"}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-white/60">
+              После первого сохранения запись появится в таблице profiles.
+            </p>
+          </div>
+
+          {params.saved ? (
+            <div className="rounded-[28px] border border-emerald-500/25 bg-emerald-500/10 p-5">
+              <p className="text-sm text-emerald-200">Profile saved successfully.</p>
+            </div>
+          ) : null}
+
+          {params.error ? (
+            <div className="rounded-[28px] border border-red-500/25 bg-red-500/10 p-5">
+              <p className="text-sm text-red-200">{params.error}</p>
+            </div>
+          ) : null}
+
           <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-sm text-white/45">Database status</p>
             <p className="mt-2 text-white/80">
@@ -65,14 +188,7 @@ export default async function ProfilePage() {
                 ? `Error: ${profileError.message}`
                 : profile
                   ? "Profile row loaded successfully."
-                  : "No profile row found yet. We will create it next."}
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-sm text-white/45">Future profile fields</p>
-            <p className="mt-2 text-white/60">
-              Username, display name, bio, looking for, favorite games, vibe tags.
+                  : "No profile row found yet."}
             </p>
           </div>
         </div>
