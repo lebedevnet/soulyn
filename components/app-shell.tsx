@@ -5,18 +5,20 @@ import AppNavigation from "@/components/app-navigation";
 type AppShellProps = {
   title: string;
   description: string;
+  pathname: string;
   children: ReactNode;
 };
 
 export default function AppShell({
   title,
   description,
+  pathname,
   children,
 }: AppShellProps) {
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white sm:px-8 lg:px-10">
       <div className="mx-auto max-w-5xl">
-        <AppNavigation />
+        <AppNavigation pathname={pathname} />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>

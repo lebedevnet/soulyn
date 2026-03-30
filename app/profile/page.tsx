@@ -35,6 +35,7 @@ export default async function ProfilePage({
     <AppShell
       title="Profile"
       description="Здесь будет профиль пользователя: описание, интересы, игры, формат общения и настройки приватности."
+      pathname="/profile"
     >
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6">

@@ -5,6 +5,7 @@ export default function RoomsPage() {
     <AppShell
       title="Rooms"
       description="Здесь будут тематические комнаты по играм, фандомам, знакомству, вайбу и позднему онлайн-общению."
+      pathname="/rooms"
     >
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">

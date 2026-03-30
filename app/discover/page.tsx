@@ -17,6 +17,7 @@ export default async function DiscoverPage() {
     <AppShell
       title="Discover"
       description="Здесь будет основная лента профилей с подбором по интересам, играм, вайбу и формату общения."
+      pathname="/discover"
     >
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6">

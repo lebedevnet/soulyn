@@ -1,7 +1,9 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { signOutAction } from "@/app/actions";
+
+type AppNavigationProps = {
+  pathname: string;
+};
 
 const navigationItems = [
   { label: "Discover", href: "/discover" },
@@ -10,9 +12,7 @@ const navigationItems = [
   { label: "Profile", href: "/profile" },
 ];
 
-export default function AppNavigation() {
-  const pathname = usePathname();
-
+export default function AppNavigation({ pathname }: AppNavigationProps) {
   return (
     <nav className="mb-10 flex flex-wrap items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] p-2">
       <Link
@@ -41,6 +41,17 @@ export default function AppNavigation() {
           </Link>
         );
       })}
+
+      <div className="ml-auto" />
+
+      <form action={signOutAction}>
+        <button
+          type="submit"
+          className="rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+        >
+          Log out
+        </button>
+      </form>
     </nav>
   );
 }

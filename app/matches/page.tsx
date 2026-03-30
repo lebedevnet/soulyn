@@ -5,6 +5,7 @@ export default function MatchesPage() {
     <AppShell
       title="Matches"
       description="Здесь будут взаимные мэтчи, анонимные интро-чаты и переход в обычный диалог после mutual unlock."
+      pathname="/matches"
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
