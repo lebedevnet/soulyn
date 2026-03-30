@@ -43,7 +43,7 @@ export default async function ProfilePage({
             {profile ? "Update your profile" : "Create your profile"}
           </h2>
 
-          <form action={saveProfileAction} className="mt-6 space-y-4">
+          <form action={saveProfileAction} autoComplete="off" className="mt-6 space-y-4">
             <div>
               <label
                 htmlFor="username"
@@ -57,6 +57,7 @@ export default async function ProfilePage({
                 defaultValue={profile?.username ?? ""}
                 placeholder="nightowl"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+                autoComplete="off"
               />
             </div>
 
@@ -73,6 +74,7 @@ export default async function ProfilePage({
                 defaultValue={profile?.display_name ?? ""}
                 placeholder="Night Owl"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+                autoComplete="off"
               />
             </div>
 
@@ -89,6 +91,7 @@ export default async function ProfilePage({
                 defaultValue={profile?.looking_for ?? ""}
                 placeholder="late-night chat, duo games, relationship"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+                autoComplete="off"
               />
             </div>
 
@@ -105,6 +108,7 @@ export default async function ProfilePage({
                 defaultValue={profile?.favorite_games?.join(", ") ?? ""}
                 placeholder="Valorant, Minecraft, Genshin Impact"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+                autoComplete="off"
               />
             </div>
 
@@ -121,6 +125,7 @@ export default async function ProfilePage({
                 defaultValue={profile?.vibe_tags?.join(", ") ?? ""}
                 placeholder="introvert, ironic, comfort talk, soft energy"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+                autoComplete="off"
               />
             </div>
 
@@ -138,6 +143,7 @@ export default async function ProfilePage({
                 placeholder="A few words about yourself, your vibe, and how you like to communicate."
                 rows={5}
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
+                autoComplete="off"
               />
             </div>
 
