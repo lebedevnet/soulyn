@@ -55,7 +55,7 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/discover"
+                href="/login"
                 className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
               >
                 Open app
