@@ -1,9 +1,34 @@
+import Link from "next/link";
+
+const appSections = [
+  {
+    title: "Discover",
+    description: "Лента профилей и подбор по интересам, играм и вайбу.",
+    href: "/discover",
+  },
+  {
+    title: "Matches",
+    description: "Взаимные симпатии, анонимные интро-чаты и диалоги.",
+    href: "/matches",
+  },
+  {
+    title: "Rooms",
+    description: "Комнаты по играм, фандомам, ночным вайбам и знакомству.",
+    href: "/rooms",
+  },
+  {
+    title: "Profile",
+    description: "Профиль пользователя, интересы, игры и формат общения.",
+    href: "/profile",
+  },
+];
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-black text-white">
       <section className="mx-auto flex min-h-screen max-w-6xl flex-col justify-between px-6 py-10 sm:px-8 lg:px-10">
         <header className="flex items-center justify-between">
-          <div className="text-xl font-semibold tracking-[0.2em] uppercase">
+          <div className="text-xl font-semibold uppercase tracking-[0.2em]">
             Soulyn
           </div>
 
@@ -29,13 +54,19 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <button className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90">
-                Join waitlist
-              </button>
+              <Link
+                href="/discover"
+                className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+              >
+                Open app
+              </Link>
 
-              <button className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/80 transition hover:border-white/30 hover:text-white">
-                Explore concept
-              </button>
+              <Link
+                href="/rooms"
+                className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/80 transition hover:border-white/30 hover:text-white"
+              >
+                Explore rooms
+              </Link>
             </div>
           </div>
 
@@ -74,6 +105,21 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-16 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {appSections.map((section) => (
+            <Link
+              key={section.href}
+              href={section.href}
+              className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
+            >
+              <p className="text-lg font-semibold">{section.title}</p>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                {section.description}
+              </p>
+            </Link>
+          ))}
         </div>
 
         <footer className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-6 text-sm text-white/40 sm:flex-row sm:items-center sm:justify-between">
