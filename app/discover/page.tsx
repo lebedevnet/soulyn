@@ -3,7 +3,16 @@ import AppShell from "@/components/app-shell";
 import DiscoverFeed from "@/components/discover-feed";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function DiscoverPage() {
+type DiscoverPageProps = {
+  searchParams: Promise<{
+    error?: string;
+  }>;
+};
+
+export default async function DiscoverPage({
+  searchParams,
+}: DiscoverPageProps) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -38,11 +47,19 @@ export default async function DiscoverPage() {
       description="Здесь будет основная лента профилей с подбором по интересам, играм, вайбу и формату общения."
       pathname="/discover"
     >
-      <DiscoverFeed
-        currentUserName={currentUserName}
-        currentUserGames={profile.favorite_games ?? []}
-        currentUserVibes={profile.vibe_tags ?? []}
-      />
+      <div className="space-y-4">
+        {params.error ? (
+          <div className="rounded-[28px] border border-red-500/25 bg-red-500/10 p-5">
+            <p className="text-sm text-red-200">{params.error}</p>
+          </div>
+        ) : null}
+
+        <DiscoverFeed
+          currentUserName={currentUserName}
+          currentUserGames={profile.favorite_games ?? []}
+          currentUserVibes={profile.vibe_tags ?? []}
+        />
+      </div>
     </AppShell>
   );
 }

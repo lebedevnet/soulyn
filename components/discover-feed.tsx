@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { saveSwipeAction } from "@/app/discover/actions";
 
 type DiscoverCandidate = {
   id: string;
@@ -75,6 +76,7 @@ export default function DiscoverFeed({
   const [index, setIndex] = useState(0);
   const [likedCount, setLikedCount] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
+  const [isPending, startTransition] = useTransition();
 
   const currentCandidate = demoCandidates[index] ?? null;
   const remainingCount = Math.max(demoCandidates.length - index - 1, 0);
@@ -88,22 +90,26 @@ export default function DiscoverFeed({
     };
   }, [currentUserGames, currentUserVibes]);
 
-  function handlePass() {
-    if (!currentCandidate) {
+  function handleSwipe(direction: "like" | "pass") {
+    if (!currentCandidate || isPending) {
       return;
     }
 
-    setPassedCount((value) => value + 1);
-    setIndex((value) => value + 1);
-  }
-
-  function handleLike() {
-    if (!currentCandidate) {
-      return;
+    if (direction === "like") {
+      setLikedCount((value) => value + 1);
+    } else {
+      setPassedCount((value) => value + 1);
     }
 
-    setLikedCount((value) => value + 1);
     setIndex((value) => value + 1);
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append("target_profile_id", currentCandidate.id);
+      formData.append("direction", direction);
+
+      await saveSwipeAction(formData);
+    });
   }
 
   function handleReset() {
@@ -173,18 +179,20 @@ export default function DiscoverFeed({
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={handlePass}
-                className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/80 transition hover:border-white/30 hover:text-white"
+                onClick={() => handleSwipe("pass")}
+                disabled={isPending}
+                className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/80 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Pass
+                {isPending ? "Saving..." : "Pass"}
               </button>
 
               <button
                 type="button"
-                onClick={handleLike}
-                className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+                onClick={() => handleSwipe("like")}
+                disabled={isPending}
+                className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Like
+                {isPending ? "Saving..." : "Like"}
               </button>
             </div>
           </div>
