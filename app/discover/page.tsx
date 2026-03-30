@@ -1,6 +1,18 @@
+import { redirect } from "next/navigation";
 import AppShell from "@/components/app-shell";
+import { createClient } from "@/lib/supabase/server";
 
-export default function DiscoverPage() {
+export default async function DiscoverPage() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+
+  const user = data?.claims;
+  const email = typeof user?.email === "string" ? user.email : null;
+
+  if (error || !user) {
+    redirect("/login");
+  }
+
   return (
     <AppShell
       title="Discover"
@@ -17,6 +29,17 @@ export default function DiscoverPage() {
         </div>
 
         <div className="space-y-4">
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-sm text-white/45">Current session</p>
+            <p className="mt-2 text-white/90">
+              {email ?? "Signed in user"}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-white/60">
+              Если ты видишь здесь свой email, значит серверная авторизация уже
+              работает.
+            </p>
+          </div>
+
           <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-sm text-white/45">Filters</p>
             <p className="mt-2 text-white/60">
