@@ -3,63 +3,24 @@ import { notFound, redirect } from "next/navigation";
 import AppShell from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
 import { demoCandidates } from "@/lib/discover/demo-candidates";
+import { sendMessageAction } from "@/app/matches/[profileId]/actions";
 
 type MatchChatPageProps = {
   params: Promise<{
     profileId: string;
   }>;
-};
-
-const demoMessagesByProfile: Record<
-  string,
-  { id: string; sender: "them" | "me"; text: string; time: string }[]
-> = {
-  "1": [
-    {
-      id: "1",
-      sender: "them",
-      text: "Hey. I saw we matched. You also play late at night?",
-      time: "22:14",
-    },
-    {
-      id: "2",
-      sender: "me",
-      text: "Yes, usually very late. Mostly when everything is quiet.",
-      time: "22:16",
-    },
-    {
-      id: "3",
-      sender: "them",
-      text: "That already sounds good. I prefer low-pressure chats and calm people.",
-      time: "22:18",
-    },
-  ],
-  "3": [
-    {
-      id: "1",
-      sender: "them",
-      text: "Hi. Your vibe tags looked very familiar.",
-      time: "21:02",
-    },
-    {
-      id: "2",
-      sender: "me",
-      text: "That is probably a good sign.",
-      time: "21:03",
-    },
-    {
-      id: "3",
-      sender: "them",
-      text: "It is. Especially the deep talks part.",
-      time: "21:05",
-    },
-  ],
+  searchParams: Promise<{
+    sent?: string;
+    error?: string;
+  }>;
 };
 
 export default async function MatchChatPage({
   params,
+  searchParams,
 }: MatchChatPageProps) {
   const { profileId } = await params;
+  const query = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -79,7 +40,7 @@ export default async function MatchChatPage({
     .maybeSingle();
 
   if (matchError) {
-    redirect(`/matches`);
+    redirect("/matches");
   }
 
   if (!match) {
@@ -92,7 +53,16 @@ export default async function MatchChatPage({
     notFound();
   }
 
-  const messages = demoMessagesByProfile[profileId] ?? [];
+  const { data: messages, error: messagesError } = await supabase
+    .from("messages")
+    .select("id, sender, body, created_at")
+    .eq("user_id", user.id)
+    .eq("target_profile_id", profileId)
+    .order("created_at", { ascending: true });
+
+  if (messagesError) {
+    redirect(`/matches/${profileId}?error=${encodeURIComponent(messagesError.message)}`);
+  }
 
   return (
     <AppShell
@@ -153,7 +123,19 @@ export default async function MatchChatPage({
           </div>
 
           <div className="mt-6 space-y-4">
-            {messages.length > 0 ? (
+            {query.sent ? (
+              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+                <p className="text-sm text-emerald-200">Message sent.</p>
+              </div>
+            ) : null}
+
+            {query.error ? (
+              <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4">
+                <p className="text-sm text-red-200">{query.error}</p>
+              </div>
+            ) : null}
+
+            {messages && messages.length > 0 ? (
               messages.map((message) => (
                 <div
                   key={message.id}
@@ -163,13 +145,15 @@ export default async function MatchChatPage({
                       : "bg-white/8 text-white"
                   }`}
                 >
-                  <p className="text-sm leading-6">{message.text}</p>
+                  <p className="text-sm leading-6">{message.body}</p>
                   <p
                     className={`mt-2 text-xs ${
-                      message.sender === "me" ? "text-black/60" : "text-white/45"
+                      message.sender === "me"
+                        ? "text-black/60"
+                        : "text-white/45"
                     }`}
                   >
-                    {message.time}
+                    {new Date(message.created_at).toLocaleString()}
                   </p>
                 </div>
               ))
@@ -180,21 +164,23 @@ export default async function MatchChatPage({
             )}
           </div>
 
-          <form className="mt-6 border-t border-white/10 pt-4">
-            <label htmlFor="message" className="mb-2 block text-sm text-white/45">
+          <form action={sendMessageAction} className="mt-6 border-t border-white/10 pt-4">
+            <input type="hidden" name="target_profile_id" value={profileId} />
+
+            <label htmlFor="body" className="mb-2 block text-sm text-white/45">
               Message
             </label>
 
             <textarea
-              id="message"
-              name="message"
+              id="body"
+              name="body"
               rows={4}
               placeholder="Type your message here..."
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-white/25"
             />
 
             <button
-              type="button"
+              type="submit"
               className="mt-4 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
             >
               Send message
