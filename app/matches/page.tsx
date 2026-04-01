@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
@@ -167,6 +168,13 @@ export default async function MatchesPage() {
                       </p>
                     </div>
                   </div>
+
+                  <Link
+                    href={`/matches/${profile.id}`}
+                    className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+                  >
+                    Open chat
+                  </Link>
                 </div>
               ))}
             </div>
