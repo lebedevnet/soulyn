@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { demoCandidates } from "@/lib/discover/demo-candidates";
 
 export async function saveSwipeAction(formData: FormData) {
   const supabase = await createClient();
@@ -27,15 +28,36 @@ export async function saveSwipeAction(formData: FormData) {
     redirect("/discover?error=Invalid swipe payload");
   }
 
-  const { error } = await supabase.from("swipes").insert({
+  const { error: swipeError } = await supabase.from("swipes").insert({
     user_id: user.id,
     target_profile_id: targetProfileId,
     direction,
   });
 
-  if (error) {
-    redirect(`/discover?error=${encodeURIComponent(error.message)}`);
+  if (swipeError) {
+    redirect(`/discover?error=${encodeURIComponent(swipeError.message)}`);
+  }
+
+  if (direction === "like") {
+    const candidate = demoCandidates.find((item) => item.id === targetProfileId);
+
+    if (candidate?.likedYou) {
+      const { error: matchError } = await supabase.from("matches").upsert(
+        {
+          user_id: user.id,
+          target_profile_id: targetProfileId,
+        },
+        {
+          onConflict: "user_id,target_profile_id",
+        },
+      );
+
+      if (matchError) {
+        redirect(`/discover?error=${encodeURIComponent(matchError.message)}`);
+      }
+    }
   }
 
   revalidatePath("/discover");
+  revalidatePath("/matches");
 }

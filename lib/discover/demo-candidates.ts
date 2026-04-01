@@ -8,6 +8,7 @@ export type DiscoverCandidate = {
   vibeTags: string[];
   bio: string;
   compatibility: number;
+  likedYou: boolean;
 };
 
 export const demoCandidates: DiscoverCandidate[] = [
@@ -21,6 +22,7 @@ export const demoCandidates: DiscoverCandidate[] = [
     vibeTags: ["introvert", "comfort talk", "soft energy"],
     bio: "Usually online at night. I like calm conversations, co-op games, and people who do not force fast communication.",
     compatibility: 92,
+    likedYou: true,
   },
   {
     id: "2",
@@ -32,6 +34,7 @@ export const demoCandidates: DiscoverCandidate[] = [
     vibeTags: ["ironic", "night owl", "memes"],
     bio: "I am here for someone with the same online rhythm. I like irony, low-pressure chats, and chaotic co-op sessions.",
     compatibility: 87,
+    likedYou: false,
   },
   {
     id: "3",
@@ -43,6 +46,7 @@ export const demoCandidates: DiscoverCandidate[] = [
     vibeTags: ["fandom", "cozy", "deep talks"],
     bio: "I like long messages, anime, music, and people who can switch from memes to serious talks in one minute.",
     compatibility: 84,
+    likedYou: true,
   },
   {
     id: "4",
@@ -54,5 +58,6 @@ export const demoCandidates: DiscoverCandidate[] = [
     vibeTags: ["voice first", "low energy", "warm vibe"],
     bio: "I open up slowly, but I value consistency. Mostly here for one real connection instead of random small talk.",
     compatibility: 81,
+    likedYou: false,
   },
 ];
