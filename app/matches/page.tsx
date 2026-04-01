@@ -181,9 +181,11 @@ export default async function MatchesPage() {
                       {profile.lastMessage ? (
                         <>
                           <p className="mt-2 text-white/85">
-                            {profile.lastMessage.sender === "me" ? "You: " : ""}
-                            {profile.lastMessage.body}
-                          </p>
+  {profile.lastMessage.sender === "me"
+    ? "You: "
+    : `${profile.name}: `}
+  {profile.lastMessage.body}
+</p>
                           <p className="mt-2 text-xs text-white/45">
                             {new Date(profile.lastMessage.createdAt).toLocaleString()}
                           </p>
