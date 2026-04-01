@@ -9,6 +9,11 @@ import {
 
 type CandidateCard = DiscoverCandidate & {
   createdAt: string;
+  lastMessage?: {
+    body: string;
+    sender: "me" | "them";
+    createdAt: string;
+  };
 };
 
 export default async function MatchesPage() {
@@ -44,6 +49,31 @@ export default async function MatchesPage() {
     redirect(`/discover?error=${encodeURIComponent(swipesError.message)}`);
   }
 
+  const { data: messages, error: messagesError } = await supabase
+    .from("messages")
+    .select("target_profile_id, sender, body, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (messagesError) {
+    redirect(`/discover?error=${encodeURIComponent(messagesError.message)}`);
+  }
+
+  const lastMessageByProfile = new Map<
+    string,
+    { body: string; sender: "me" | "them"; createdAt: string }
+  >();
+
+  for (const message of messages ?? []) {
+    if (!lastMessageByProfile.has(message.target_profile_id)) {
+      lastMessageByProfile.set(message.target_profile_id, {
+        body: message.body,
+        sender: message.sender,
+        createdAt: message.created_at,
+      });
+    }
+  }
+
   const matchMap = new Map<string, string>();
 
   for (const match of matches ?? []) {
@@ -64,6 +94,7 @@ export default async function MatchesPage() {
     result.push({
       ...candidate,
       createdAt,
+      lastMessage: lastMessageByProfile.get(targetProfileId),
     });
 
     return result;
@@ -110,7 +141,7 @@ export default async function MatchesPage() {
         <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm text-white/45">Current stage</p>
           <p className="mt-2 text-white/80">
-            Теперь страница разделена на two sections: real matches и liked profiles without mutual match.
+            Теперь в real matches виден последний message preview, а pending likes остаются отдельным списком.
           </p>
         </div>
 
@@ -145,8 +176,21 @@ export default async function MatchesPage() {
 
                   <div className="mt-5 space-y-3">
                     <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Looking for</p>
-                      <p className="mt-2 text-white/85">{profile.lookingFor}</p>
+                      <p className="text-sm text-white/45">Last message</p>
+
+                      {profile.lastMessage ? (
+                        <>
+                          <p className="mt-2 text-white/85">
+                            {profile.lastMessage.sender === "me" ? "You: " : ""}
+                            {profile.lastMessage.body}
+                          </p>
+                          <p className="mt-2 text-xs text-white/45">
+                            {new Date(profile.lastMessage.createdAt).toLocaleString()}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="mt-2 text-white/60">No messages yet.</p>
+                      )}
                     </div>
 
                     <div className="rounded-2xl bg-white/5 p-4">
@@ -158,13 +202,6 @@ export default async function MatchesPage() {
                       <p className="text-sm text-white/45">Vibe tags</p>
                       <p className="mt-2 text-white/85">
                         {profile.vibeTags.join(", ")}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Matched at</p>
-                      <p className="mt-2 text-white/75">
-                        {new Date(profile.createdAt).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -225,18 +262,6 @@ export default async function MatchesPage() {
                     <div className="rounded-2xl bg-white/5 p-4">
                       <p className="text-sm text-white/45">Looking for</p>
                       <p className="mt-2 text-white/85">{profile.lookingFor}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Games</p>
-                      <p className="mt-2 text-white/85">{profile.games.join(", ")}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Vibe tags</p>
-                      <p className="mt-2 text-white/85">
-                        {profile.vibeTags.join(", ")}
-                      </p>
                     </div>
 
                     <div className="rounded-2xl bg-white/5 p-4">
