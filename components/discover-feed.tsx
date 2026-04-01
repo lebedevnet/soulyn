@@ -8,20 +8,28 @@ type DiscoverFeedProps = {
   currentUserName: string;
   currentUserGames: string[];
   currentUserVibes: string[];
+  swipedProfileIds: string[];
 };
 
 export default function DiscoverFeed({
   currentUserName,
   currentUserGames,
   currentUserVibes,
+  swipedProfileIds,
 }: DiscoverFeedProps) {
   const [index, setIndex] = useState(0);
   const [likedCount, setLikedCount] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
   const [isPending, startTransition] = useTransition();
 
-  const currentCandidate = demoCandidates[index] ?? null;
-  const remainingCount = Math.max(demoCandidates.length - index - 1, 0);
+  const availableCandidates = useMemo(() => {
+    return demoCandidates.filter(
+      (candidate) => !swipedProfileIds.includes(candidate.id),
+    );
+  }, [swipedProfileIds]);
+
+  const currentCandidate = availableCandidates[index] ?? null;
+  const remainingCount = Math.max(availableCandidates.length - index - 1, 0);
 
   const summary = useMemo(() => {
     return {
@@ -70,7 +78,7 @@ export default function DiscoverFeed({
           </div>
 
           <div className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/65">
-            {index < demoCandidates.length
+            {currentCandidate
               ? `${remainingCount + 1} cards left`
               : "No cards left"}
           </div>
@@ -141,11 +149,11 @@ export default function DiscoverFeed({
         ) : (
           <div className="mt-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-sm text-white/45">Queue finished</p>
-            <h3 className="mt-2 text-2xl font-semibold">No more demo profiles</h3>
+            <h3 className="mt-2 text-2xl font-semibold">No more unseen profiles</h3>
             <p className="mt-3 max-w-xl text-white/60">
-              You reached the end of the current recommendation queue. For now this
-              is a local prototype feed. Later we will replace it with real profiles
-              from the database.
+              You already swiped all demo profiles. Restart will only reset the local
+              counters, but already swiped cards stay hidden because they are now saved
+              in the database.
             </p>
 
             <button
@@ -153,7 +161,7 @@ export default function DiscoverFeed({
               onClick={handleReset}
               className="mt-6 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
             >
-              Restart feed
+              Reset local counters
             </button>
           </div>
         )}

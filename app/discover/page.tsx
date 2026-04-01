@@ -38,6 +38,19 @@ export default async function DiscoverPage({
     redirect("/profile?setup=1");
   }
 
+  const { data: swipes, error: swipesError } = await supabase
+    .from("swipes")
+    .select("target_profile_id")
+    .eq("user_id", user.id);
+
+  if (swipesError) {
+    redirect(`/discover?error=${encodeURIComponent(swipesError.message)}`);
+  }
+
+  const swipedProfileIds = Array.from(
+    new Set((swipes ?? []).map((swipe) => swipe.target_profile_id)),
+  );
+
   const currentUserName =
     profile.display_name ?? profile.username ?? user.email ?? "Soulyn user";
 
@@ -58,6 +71,7 @@ export default async function DiscoverPage({
           currentUserName={currentUserName}
           currentUserGames={profile.favorite_games ?? []}
           currentUserVibes={profile.vibe_tags ?? []}
+          swipedProfileIds={swipedProfileIds}
         />
       </div>
     </AppShell>
