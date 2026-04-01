@@ -9,6 +9,7 @@ import {
 
 type CandidateCard = DiscoverCandidate & {
   createdAt: string;
+  lastReadAt: string | null;
   lastMessage?: {
     body: string;
     sender: "me" | "them";
@@ -30,7 +31,7 @@ export default async function MatchesPage() {
 
   const { data: matches, error: matchesError } = await supabase
     .from("matches")
-    .select("target_profile_id, created_at")
+    .select("target_profile_id, created_at, last_read_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -74,17 +75,20 @@ export default async function MatchesPage() {
     }
   }
 
-  const matchMap = new Map<string, string>();
+  const matchMap = new Map<string, { createdAt: string; lastReadAt: string | null }>();
 
   for (const match of matches ?? []) {
     if (!matchMap.has(match.target_profile_id)) {
-      matchMap.set(match.target_profile_id, match.created_at);
+      matchMap.set(match.target_profile_id, {
+        createdAt: match.created_at,
+        lastReadAt: match.last_read_at,
+      });
     }
   }
 
   const realMatches: CandidateCard[] = Array.from(matchMap.entries()).reduce<
     CandidateCard[]
-  >((result, [targetProfileId, createdAt]) => {
+  >((result, [targetProfileId, matchMeta]) => {
     const candidate = demoCandidates.find((item) => item.id === targetProfileId);
 
     if (!candidate) {
@@ -93,7 +97,8 @@ export default async function MatchesPage() {
 
     result.push({
       ...candidate,
-      createdAt,
+      createdAt: matchMeta.createdAt,
+      lastReadAt: matchMeta.lastReadAt,
       lastMessage: lastMessageByProfile.get(targetProfileId),
     });
 
@@ -126,6 +131,7 @@ export default async function MatchesPage() {
     result.push({
       ...candidate,
       createdAt,
+      lastReadAt: null,
     });
 
     return result;
@@ -141,7 +147,7 @@ export default async function MatchesPage() {
         <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm text-white/45">Current stage</p>
           <p className="mt-2 text-white/80">
-            Теперь в real matches виден последний message preview и упрощённый unread status.
+            Теперь unread badge зависит не только от автора последнего сообщения, но и от того, был ли чат уже открыт.
           </p>
         </div>
 
@@ -156,7 +162,11 @@ export default async function MatchesPage() {
           {realMatches.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {realMatches.map((profile) => {
-                const hasUnreadReply = profile.lastMessage?.sender === "them";
+                const hasUnreadReply =
+                  profile.lastMessage?.sender === "them" &&
+                  (!profile.lastReadAt ||
+                    new Date(profile.lastMessage.createdAt).getTime() >
+                      new Date(profile.lastReadAt).getTime());
 
                 return (
                   <div
@@ -220,7 +230,7 @@ export default async function MatchesPage() {
                     </div>
 
                     <Link
-                      href={`/matches/${profile.id}`}
+                      href={`/matches/${profile.id}/open`}
                       className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
                     >
                       Open chat
