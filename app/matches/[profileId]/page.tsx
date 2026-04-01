@@ -15,6 +15,49 @@ type MatchChatPageProps = {
   }>;
 };
 
+type MessageItem = {
+  id: string;
+  sender: "me" | "them";
+  body: string;
+  created_at: string;
+};
+
+function formatDayLabel(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatTimeLabel(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function groupMessagesByDay(messages: MessageItem[]) {
+  const groups: { day: string; items: MessageItem[] }[] = [];
+
+  for (const message of messages) {
+    const day = new Date(message.created_at).toDateString();
+    const lastGroup = groups[groups.length - 1];
+
+    if (!lastGroup || lastGroup.day !== day) {
+      groups.push({
+        day,
+        items: [message],
+      });
+      continue;
+    }
+
+    lastGroup.items.push(message);
+  }
+
+  return groups;
+}
+
 export default async function MatchChatPage({
   params,
   searchParams,
@@ -64,13 +107,15 @@ export default async function MatchChatPage({
     redirect(`/matches/${profileId}?error=${encodeURIComponent(messagesError.message)}`);
   }
 
+  const messageGroups = groupMessagesByDay((messages ?? []) as MessageItem[]);
+
   return (
     <AppShell
       title={`${profile.name} chat`}
       description="Первый экран переписки для mutual match."
       pathname="/matches"
     >
-      <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="space-y-4">
           <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/5 p-6">
             <p className="text-sm text-emerald-200/80">Mutual match</p>
@@ -114,57 +159,74 @@ export default async function MatchChatPage({
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6">
-          <div className="border-b border-white/10 pb-4">
+        <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04]">
+          <div className="sticky top-0 z-10 border-b border-white/10 bg-black/70 px-6 py-5 backdrop-blur">
             <p className="text-sm text-white/45">Conversation</p>
             <h2 className="mt-2 text-2xl font-semibold">
               Chat with {profile.name}
             </h2>
           </div>
 
-          <div className="mt-6 space-y-4">
-            {query.sent ? (
-              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4">
-                <p className="text-sm text-emerald-200">Message sent.</p>
-              </div>
-            ) : null}
-
-            {query.error ? (
-              <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4">
-                <p className="text-sm text-red-200">{query.error}</p>
-              </div>
-            ) : null}
-
-            {messages && messages.length > 0 ? (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`max-w-[85%] rounded-3xl px-4 py-3 ${
-                    message.sender === "me"
-                      ? "ml-auto bg-white text-black"
-                      : "bg-white/8 text-white"
-                  }`}
-                >
-                  <p className="text-sm leading-6">{message.body}</p>
-                  <p
-                    className={`mt-2 text-xs ${
-                      message.sender === "me"
-                        ? "text-black/60"
-                        : "text-white/45"
-                    }`}
-                  >
-                    {new Date(message.created_at).toLocaleString()}
-                  </p>
+          <div className="max-h-[560px] overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              {query.sent ? (
+                <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+                  <p className="text-sm text-emerald-200">Message sent.</p>
                 </div>
-              ))
-            ) : (
-              <div className="rounded-2xl bg-white/5 p-4 text-white/65">
-                No messages yet.
-              </div>
-            )}
+              ) : null}
+
+              {query.error ? (
+                <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-4">
+                  <p className="text-sm text-red-200">{query.error}</p>
+                </div>
+              ) : null}
+
+              {messageGroups.length > 0 ? (
+                messageGroups.map((group) => (
+                  <div key={group.day} className="space-y-4">
+                    <div className="flex justify-center">
+                      <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/50">
+                        {formatDayLabel(group.items[0].created_at)}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {group.items.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`max-w-[85%] rounded-3xl px-4 py-3 ${
+                            message.sender === "me"
+                              ? "ml-auto bg-white text-black"
+                              : "bg-white/8 text-white"
+                          }`}
+                        >
+                          <p className="text-sm leading-6">{message.body}</p>
+                          <p
+                            className={`mt-2 text-xs ${
+                              message.sender === "me"
+                                ? "text-black/60"
+                                : "text-white/45"
+                            }`}
+                          >
+                            {formatTimeLabel(message.created_at)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl bg-white/5 p-4 text-white/65">
+                  No messages yet.
+                </div>
+              )}
+            </div>
           </div>
 
-          <form action={sendMessageAction} className="mt-6 border-t border-white/10 pt-4">
+          <form
+            action={sendMessageAction}
+            className="border-t border-white/10 px-6 py-5"
+          >
             <input type="hidden" name="target_profile_id" value={profileId} />
 
             <label htmlFor="body" className="mb-2 block text-sm text-white/45">
