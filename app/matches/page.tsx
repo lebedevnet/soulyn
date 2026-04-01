@@ -141,7 +141,7 @@ export default async function MatchesPage() {
         <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm text-white/45">Current stage</p>
           <p className="mt-2 text-white/80">
-            Теперь в real matches виден последний message preview, а pending likes остаются отдельным списком.
+            Теперь в real matches виден последний message preview и упрощённый unread status.
           </p>
         </div>
 
@@ -155,67 +155,79 @@ export default async function MatchesPage() {
 
           {realMatches.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {realMatches.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/5 p-6"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-emerald-200/80">Mutual match</p>
-                      <h3 className="mt-2 text-2xl font-semibold">
-                        {profile.name}, {profile.age}
-                      </h3>
-                      <p className="mt-2 text-white/55">{profile.city}</p>
-                    </div>
+              {realMatches.map((profile) => {
+                const hasUnreadReply = profile.lastMessage?.sender === "them";
 
-                    <div className="rounded-full border border-emerald-400/20 px-3 py-1 text-xs text-emerald-200/80">
-                      It&apos;s a match
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-3">
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Last message</p>
-
-                      {profile.lastMessage ? (
-                        <>
-                          <p className="mt-2 text-white/85">
-  {profile.lastMessage.sender === "me"
-    ? "You: "
-    : `${profile.name}: `}
-  {profile.lastMessage.body}
-</p>
-                          <p className="mt-2 text-xs text-white/45">
-                            {new Date(profile.lastMessage.createdAt).toLocaleString()}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="mt-2 text-white/60">No messages yet.</p>
-                      )}
-                    </div>
-
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Games</p>
-                      <p className="mt-2 text-white/85">{profile.games.join(", ")}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Vibe tags</p>
-                      <p className="mt-2 text-white/85">
-                        {profile.vibeTags.join(", ")}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/matches/${profile.id}`}
-                    className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+                return (
+                  <div
+                    key={profile.id}
+                    className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/5 p-6"
                   >
-                    Open chat
-                  </Link>
-                </div>
-              ))}
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-emerald-200/80">Mutual match</p>
+                        <h3 className="mt-2 text-2xl font-semibold">
+                          {profile.name}, {profile.age}
+                        </h3>
+                        <p className="mt-2 text-white/55">{profile.city}</p>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="rounded-full border border-emerald-400/20 px-3 py-1 text-xs text-emerald-200/80">
+                          It&apos;s a match
+                        </div>
+
+                        {hasUnreadReply ? (
+                          <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white">
+                            New reply
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      <div className="rounded-2xl bg-white/5 p-4">
+                        <p className="text-sm text-white/45">Last message</p>
+
+                        {profile.lastMessage ? (
+                          <>
+                            <p className="mt-2 text-white/85">
+                              {profile.lastMessage.sender === "me"
+                                ? "You: "
+                                : `${profile.name}: `}
+                              {profile.lastMessage.body}
+                            </p>
+                            <p className="mt-2 text-xs text-white/45">
+                              {new Date(profile.lastMessage.createdAt).toLocaleString()}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="mt-2 text-white/60">No messages yet.</p>
+                        )}
+                      </div>
+
+                      <div className="rounded-2xl bg-white/5 p-4">
+                        <p className="text-sm text-white/45">Games</p>
+                        <p className="mt-2 text-white/85">{profile.games.join(", ")}</p>
+                      </div>
+
+                      <div className="rounded-2xl bg-white/5 p-4">
+                        <p className="text-sm text-white/45">Vibe tags</p>
+                        <p className="mt-2 text-white/85">
+                          {profile.vibeTags.join(", ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/matches/${profile.id}`}
+                      className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
+                    >
+                      Open chat
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
