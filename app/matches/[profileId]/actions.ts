@@ -54,18 +54,24 @@ export async function sendMessageAction(formData: FormData) {
   const trimmedBody = body.trim();
   const autoReply = pickAutoReply(targetProfileId);
 
+  const baseTime = Date.now();
+  const myMessageCreatedAt = new Date(baseTime).toISOString();
+  const replyCreatedAt = new Date(baseTime + 1).toISOString();
+
   const { error } = await supabase.from("messages").insert([
     {
       user_id: user.id,
       target_profile_id: targetProfileId,
       sender: "me",
       body: trimmedBody,
+      created_at: myMessageCreatedAt,
     },
     {
       user_id: user.id,
       target_profile_id: targetProfileId,
       sender: "them",
       body: autoReply,
+      created_at: replyCreatedAt,
     },
   ]);
 
@@ -74,5 +80,6 @@ export async function sendMessageAction(formData: FormData) {
   }
 
   revalidatePath(`/matches/${targetProfileId}`);
+  revalidatePath("/matches");
   redirect(`/matches/${targetProfileId}?sent=1`);
 }
