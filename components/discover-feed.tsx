@@ -17,7 +17,6 @@ export default function DiscoverFeed({
   currentUserVibes,
   swipedProfileIds,
 }: DiscoverFeedProps) {
-  const [index, setIndex] = useState(0);
   const [likedCount, setLikedCount] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
   const [isPending, startTransition] = useTransition();
@@ -28,15 +27,19 @@ export default function DiscoverFeed({
     );
   }, [swipedProfileIds]);
 
-  const currentCandidate = availableCandidates[index] ?? null;
-  const remainingCount = Math.max(availableCandidates.length - index - 1, 0);
+  const currentCandidate = availableCandidates[0] ?? null;
+  const remainingCount = availableCandidates.length;
 
   const summary = useMemo(() => {
     return {
       currentUserGames:
-        currentUserGames.length > 0 ? currentUserGames.join(", ") : "No games added yet",
+        currentUserGames.length > 0
+          ? currentUserGames.join(", ")
+          : "No games added yet",
       currentUserVibes:
-        currentUserVibes.length > 0 ? currentUserVibes.join(", ") : "No vibe tags added yet",
+        currentUserVibes.length > 0
+          ? currentUserVibes.join(", ")
+          : "No vibe tags added yet",
     };
   }, [currentUserGames, currentUserVibes]);
 
@@ -51,8 +54,6 @@ export default function DiscoverFeed({
       setPassedCount((value) => value + 1);
     }
 
-    setIndex((value) => value + 1);
-
     startTransition(async () => {
       const formData = new FormData();
       formData.append("target_profile_id", currentCandidate.id);
@@ -63,7 +64,6 @@ export default function DiscoverFeed({
   }
 
   function handleReset() {
-    setIndex(0);
     setLikedCount(0);
     setPassedCount(0);
   }
@@ -74,13 +74,13 @@ export default function DiscoverFeed({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm text-white/45">Discover feed</p>
-            <h2 className="mt-2 text-2xl font-semibold">Profile recommendations</h2>
+            <h2 className="mt-2 text-2xl font-semibold">
+              Profile recommendations
+            </h2>
           </div>
 
           <div className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/65">
-            {currentCandidate
-              ? `${remainingCount + 1} cards left`
-              : "No cards left"}
+            {currentCandidate ? `${remainingCount} cards left` : "No cards left"}
           </div>
         </div>
 
@@ -103,7 +103,9 @@ export default function DiscoverFeed({
             <div className="mt-6 space-y-4">
               <div className="rounded-2xl bg-white/5 p-4">
                 <p className="text-sm text-white/45">Looking for</p>
-                <p className="mt-2 text-white/85">{currentCandidate.lookingFor}</p>
+                <p className="mt-2 text-white/85">
+                  {currentCandidate.lookingFor}
+                </p>
               </div>
 
               <div className="rounded-2xl bg-white/5 p-4">
@@ -151,8 +153,8 @@ export default function DiscoverFeed({
             <p className="text-sm text-white/45">Queue finished</p>
             <h3 className="mt-2 text-2xl font-semibold">No more unseen profiles</h3>
             <p className="mt-3 max-w-xl text-white/60">
-              You already swiped all demo profiles. Restart will only reset the local
-              counters, but already swiped cards stay hidden because they are now saved
+              You already swiped all demo profiles. Reset will only clear the local
+              counters, but already swiped cards stay hidden because they are saved
               in the database.
             </p>
 
