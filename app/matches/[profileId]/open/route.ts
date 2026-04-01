@@ -7,7 +7,7 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { profileId } = await context.params;
   const supabase = await createClient();
 
@@ -17,10 +17,10 @@ export async function GET(_request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return NextResponse.redirect(new URL("/login", _request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  await supabase
+  const { error } = await supabase
     .from("matches")
     .update({
       last_read_at: new Date().toISOString(),
@@ -28,5 +28,14 @@ export async function GET(_request: Request, context: RouteContext) {
     .eq("user_id", user.id)
     .eq("target_profile_id", profileId);
 
-  return NextResponse.redirect(new URL(`/matches/${profileId}`, _request.url));
+  if (error) {
+    return NextResponse.redirect(
+      new URL(
+        `/matches/${profileId}?error=${encodeURIComponent(error.message)}`,
+        request.url,
+      ),
+    );
+  }
+
+  return NextResponse.redirect(new URL(`/matches/${profileId}`, request.url));
 }
