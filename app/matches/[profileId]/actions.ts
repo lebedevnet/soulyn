@@ -52,33 +52,25 @@ export async function sendMessageAction(formData: FormData) {
   }
 
   const trimmedBody = body.trim();
-
-  const { error: myMessageError } = await supabase.from("messages").insert({
-    user_id: user.id,
-    target_profile_id: targetProfileId,
-    sender: "me",
-    body: trimmedBody,
-  });
-
-  if (myMessageError) {
-    redirect(
-      `/matches/${targetProfileId}?error=${encodeURIComponent(myMessageError.message)}`,
-    );
-  }
-
   const autoReply = pickAutoReply(targetProfileId);
 
-  const { error: replyError } = await supabase.from("messages").insert({
-    user_id: user.id,
-    target_profile_id: targetProfileId,
-    sender: "them",
-    body: autoReply,
-  });
+  const { error } = await supabase.from("messages").insert([
+    {
+      user_id: user.id,
+      target_profile_id: targetProfileId,
+      sender: "me",
+      body: trimmedBody,
+    },
+    {
+      user_id: user.id,
+      target_profile_id: targetProfileId,
+      sender: "them",
+      body: autoReply,
+    },
+  ]);
 
-  if (replyError) {
-    redirect(
-      `/matches/${targetProfileId}?error=${encodeURIComponent(replyError.message)}`,
-    );
+  if (error) {
+    redirect(`/matches/${targetProfileId}?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath(`/matches/${targetProfileId}`);
