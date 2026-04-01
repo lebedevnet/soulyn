@@ -4,6 +4,30 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+const autoRepliesByProfile: Record<string, string[]> = {
+  "1": [
+    "That already sounds comfortable.",
+    "Late-night people usually understand each other better.",
+    "I like the calm vibe of this chat already.",
+  ],
+  "3": [
+    "That is actually a very good answer.",
+    "I had a feeling we would get along.",
+    "I am always curious when someone can do both memes and deep talks.",
+  ],
+};
+
+function pickAutoReply(profileId: string) {
+  const replies = autoRepliesByProfile[profileId] ?? [
+    "Sounds good.",
+    "I would like to hear more.",
+    "That is a nice start.",
+  ];
+
+  const randomIndex = Math.floor(Math.random() * replies.length);
+  return replies[randomIndex];
+}
+
 export async function sendMessageAction(formData: FormData) {
   const supabase = await createClient();
 
@@ -29,15 +53,32 @@ export async function sendMessageAction(formData: FormData) {
 
   const trimmedBody = body.trim();
 
-  const { error } = await supabase.from("messages").insert({
+  const { error: myMessageError } = await supabase.from("messages").insert({
     user_id: user.id,
     target_profile_id: targetProfileId,
     sender: "me",
     body: trimmedBody,
   });
 
-  if (error) {
-    redirect(`/matches/${targetProfileId}?error=${encodeURIComponent(error.message)}`);
+  if (myMessageError) {
+    redirect(
+      `/matches/${targetProfileId}?error=${encodeURIComponent(myMessageError.message)}`,
+    );
+  }
+
+  const autoReply = pickAutoReply(targetProfileId);
+
+  const { error: replyError } = await supabase.from("messages").insert({
+    user_id: user.id,
+    target_profile_id: targetProfileId,
+    sender: "them",
+    body: autoReply,
+  });
+
+  if (replyError) {
+    redirect(
+      `/matches/${targetProfileId}?error=${encodeURIComponent(replyError.message)}`,
+    );
   }
 
   revalidatePath(`/matches/${targetProfileId}`);
