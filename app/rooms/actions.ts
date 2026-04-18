@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+function resolveReturnPath(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") return null;
+  if (!value.startsWith("/")) return null;
+  return value;
+}
+
 export async function joinRoomAction(formData: FormData) {
   const supabase = await createClient();
 
@@ -27,9 +33,7 @@ export async function joinRoomAction(formData: FormData) {
       room_id: roomId,
       user_id: user.id,
     },
-    {
-      onConflict: "room_id,user_id",
-    },
+    { onConflict: "room_id,user_id" },
   );
 
   if (error) {
@@ -37,6 +41,13 @@ export async function joinRoomAction(formData: FormData) {
   }
 
   revalidatePath("/rooms");
+  revalidatePath(`/rooms/${roomId}`);
+
+  const returnTo = resolveReturnPath(formData.get("return_to"));
+  if (returnTo) {
+    redirect(returnTo);
+  }
+
   redirect("/rooms?joined=1");
 }
 
@@ -69,5 +80,12 @@ export async function leaveRoomAction(formData: FormData) {
   }
 
   revalidatePath("/rooms");
+  revalidatePath(`/rooms/${roomId}`);
+
+  const returnTo = resolveReturnPath(formData.get("return_to"));
+  if (returnTo) {
+    redirect(returnTo);
+  }
+
   redirect("/rooms?left=1");
 }

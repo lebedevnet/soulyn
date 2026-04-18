@@ -1,50 +1,72 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import AppNavigation from "@/components/app-navigation";
 
 type AppShellProps = {
-  title: string;
-  description: string;
   pathname: string;
   children: ReactNode;
+  unreadMatches?: number;
+  userLabel?: string;
+  contentClassName?: string;
 };
 
 export default function AppShell({
-  title,
-  description,
   pathname,
   children,
+  unreadMatches,
+  userLabel,
+  contentClassName = "",
 }: AppShellProps) {
   return (
-    <main className="min-h-screen bg-black px-6 py-10 text-white sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-5xl">
-        <AppNavigation pathname={pathname} />
+    <div className="min-h-[100svh] pb-20 md:pb-0">
+      <AppNavigation
+        pathname={pathname}
+        unreadMatches={unreadMatches}
+        userLabel={userLabel}
+      />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/40">
-              Soulyn
-            </p>
+      <main
+        className={`mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10 ${contentClassName}`}
+      >
+        {children}
+      </main>
+    </div>
+  );
+}
 
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
-              {title}
-            </h1>
+type PageHeaderProps = {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+};
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-white/60">
-              {description}
-            </p>
-          </div>
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+}: PageHeaderProps) {
+  return (
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="max-w-2xl">
+        {eyebrow ? (
+          <p className="text-[11px] font-medium uppercase tracking-[0.32em] text-white/40">
+            {eyebrow}
+          </p>
+        ) : null}
 
-          <Link
-            href="/"
-            className="rounded-full border border-white/15 px-5 py-3 text-sm text-white/80 transition hover:border-white/30 hover:text-white"
-          >
-            Back to home
-          </Link>
-        </div>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+          {title}
+        </h1>
 
-        <div className="mt-10">{children}</div>
+        {description ? (
+          <p className="mt-3 text-[15px] leading-relaxed text-white/60">
+            {description}
+          </p>
+        ) : null}
       </div>
-    </main>
+
+      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+    </div>
   );
 }

@@ -1,10 +1,33 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin", "cyrillic"],
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Soulyn",
+  title: "Soulyn — find your person by vibe",
   description:
-    "Soulyn is a social discovery platform for gamers, introverts, and online-first people.",
+    "Soulyn — social discovery и dating для геймеров, интровертов и online-first людей. Подбор по играм, вайбу и формату общения.",
+  applicationName: "Soulyn",
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#07070a",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -13,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>{children}</body>
     </html>
   );

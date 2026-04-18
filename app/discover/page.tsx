@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import AppShell from "@/components/app-shell";
+import AppShell, { PageHeader } from "@/components/app-shell";
 import DiscoverFeed from "@/components/discover-feed";
 import { createClient } from "@/lib/supabase/server";
 
 type DiscoverPageProps = {
   searchParams: Promise<{
     error?: string;
+    reset?: string;
   }>;
 };
 
@@ -47,33 +48,85 @@ export default async function DiscoverPage({
     redirect(`/discover?error=${encodeURIComponent(swipesError.message)}`);
   }
 
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("target_profile_id, last_read_at")
+    .eq("user_id", user.id);
+
+  const { data: latestMessages } = await supabase
+    .from("messages")
+    .select("target_profile_id, sender, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const latestByProfile = new Map<
+    string,
+    { sender: "me" | "them"; createdAt: string }
+  >();
+
+  for (const message of latestMessages ?? []) {
+    if (!latestByProfile.has(message.target_profile_id)) {
+      latestByProfile.set(message.target_profile_id, {
+        sender: message.sender,
+        createdAt: message.created_at,
+      });
+    }
+  }
+
+  let unreadMatches = 0;
+
+  for (const match of matches ?? []) {
+    const latest = latestByProfile.get(match.target_profile_id);
+
+    if (!latest || latest.sender !== "them") {
+      continue;
+    }
+
+    if (
+      !match.last_read_at ||
+      new Date(latest.createdAt).getTime() >
+        new Date(match.last_read_at).getTime()
+    ) {
+      unreadMatches += 1;
+    }
+  }
+
   const swipedProfileIds = Array.from(
     new Set((swipes ?? []).map((swipe) => swipe.target_profile_id)),
   );
 
-  const currentUserName =
-    profile.display_name ?? profile.username ?? user.email ?? "Soulyn user";
+  const userLabel =
+    profile.display_name ?? profile.username ?? user.email ?? undefined;
 
   return (
     <AppShell
-      title="Discover"
-      description="Здесь будет основная лента профилей с подбором по интересам, играм, вайбу и формату общения."
       pathname="/discover"
+      unreadMatches={unreadMatches}
+      userLabel={userLabel}
     >
-      <div className="space-y-4">
-        {params.error ? (
-          <div className="rounded-[28px] border border-red-500/25 bg-red-500/10 p-5">
-            <p className="text-sm text-red-200">{params.error}</p>
-          </div>
-        ) : null}
+      <PageHeader
+        eyebrow="Discover"
+        title="Люди по вайбу"
+        description="Выбирай тех, с кем совпадает ритм. Свайпай влево, чтобы пропустить, и вправо, если вайб ваш."
+      />
 
-        <DiscoverFeed
-          currentUserName={currentUserName}
-          currentUserGames={profile.favorite_games ?? []}
-          currentUserVibes={profile.vibe_tags ?? []}
-          swipedProfileIds={swipedProfileIds}
-        />
-      </div>
+      {params.reset ? (
+        <div className="mb-4 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          Свайпы, мэтчи и сообщения сброшены. Можно начинать заново.
+        </div>
+      ) : null}
+
+      {params.error ? (
+        <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {params.error}
+        </div>
+      ) : null}
+
+      <DiscoverFeed
+        currentUserGames={profile.favorite_games ?? []}
+        currentUserVibes={profile.vibe_tags ?? []}
+        swipedProfileIds={swipedProfileIds}
+      />
     </AppShell>
   );
 }

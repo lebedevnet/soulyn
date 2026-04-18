@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import AppShell from "@/components/app-shell";
+import AppShell, { PageHeader } from "@/components/app-shell";
+import Avatar from "@/components/avatar";
+import { HeartIcon, MessageIcon, SparkleIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import {
   demoCandidates,
   type DiscoverCandidate,
 } from "@/lib/discover/demo-candidates";
 
-type CandidateCard = DiscoverCandidate & {
+type MatchRecord = DiscoverCandidate & {
   createdAt: string;
   lastReadAt: string | null;
   lastMessage?: {
@@ -16,6 +18,28 @@ type CandidateCard = DiscoverCandidate & {
     createdAt: string;
   };
 };
+
+type PendingRecord = DiscoverCandidate & {
+  createdAt: string;
+};
+
+function relativeTime(value: string) {
+  const now = Date.now();
+  const then = new Date(value).getTime();
+  const diff = Math.max(0, now - then);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "только что";
+  if (diff < hour) return `${Math.floor(diff / minute)} мин назад`;
+  if (diff < day) return `${Math.floor(diff / hour)} ч назад`;
+  if (diff < 7 * day) return `${Math.floor(diff / day)} д назад`;
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "short",
+  }).format(new Date(value));
+}
 
 export default async function MatchesPage() {
   const supabase = await createClient();
@@ -29,35 +53,39 @@ export default async function MatchesPage() {
     redirect("/login");
   }
 
-  const { data: matches, error: matchesError } = await supabase
-    .from("matches")
-    .select("target_profile_id, created_at, last_read_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, username")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  if (matchesError) {
-    redirect(`/discover?error=${encodeURIComponent(matchesError.message)}`);
-  }
+  const userLabel =
+    profile?.display_name ?? profile?.username ?? user.email ?? undefined;
 
-  const { data: swipes, error: swipesError } = await supabase
-    .from("swipes")
-    .select("target_profile_id, direction, created_at")
-    .eq("user_id", user.id)
-    .eq("direction", "like")
-    .order("created_at", { ascending: false });
+  const [{ data: matches, error: matchesError }, { data: swipes, error: swipesError }, { data: messages, error: messagesError }] =
+    await Promise.all([
+      supabase
+        .from("matches")
+        .select("target_profile_id, created_at, last_read_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("swipes")
+        .select("target_profile_id, direction, created_at")
+        .eq("user_id", user.id)
+        .eq("direction", "like")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("messages")
+        .select("target_profile_id, sender, body, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
 
-  if (swipesError) {
-    redirect(`/discover?error=${encodeURIComponent(swipesError.message)}`);
-  }
-
-  const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select("target_profile_id, sender, body, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (messagesError) {
-    redirect(`/discover?error=${encodeURIComponent(messagesError.message)}`);
+  if (matchesError || swipesError || messagesError) {
+    const message =
+      matchesError?.message ?? swipesError?.message ?? messagesError?.message;
+    redirect(`/discover?error=${encodeURIComponent(message ?? "")}`);
   }
 
   const lastMessageByProfile = new Map<
@@ -75,7 +103,10 @@ export default async function MatchesPage() {
     }
   }
 
-  const matchMap = new Map<string, { createdAt: string; lastReadAt: string | null }>();
+  const matchMap = new Map<
+    string,
+    { createdAt: string; lastReadAt: string | null }
+  >();
 
   for (const match of matches ?? []) {
     if (!matchMap.has(match.target_profile_id)) {
@@ -86,228 +117,216 @@ export default async function MatchesPage() {
     }
   }
 
-  const realMatches: CandidateCard[] = Array.from(matchMap.entries()).reduce<
-    CandidateCard[]
-  >((result, [targetProfileId, matchMeta]) => {
-    const candidate = demoCandidates.find((item) => item.id === targetProfileId);
+  const realMatches: MatchRecord[] = Array.from(matchMap.entries()).reduce<
+    MatchRecord[]
+  >((acc, [profileId, meta]) => {
+    const candidate = demoCandidates.find((item) => item.id === profileId);
+    if (!candidate) return acc;
 
-    if (!candidate) {
-      return result;
-    }
-
-    result.push({
+    acc.push({
       ...candidate,
-      createdAt: matchMeta.createdAt,
-      lastReadAt: matchMeta.lastReadAt,
-      lastMessage: lastMessageByProfile.get(targetProfileId),
+      createdAt: meta.createdAt,
+      lastReadAt: meta.lastReadAt,
+      lastMessage: lastMessageByProfile.get(profileId),
     });
 
-    return result;
+    return acc;
   }, []);
 
   const realMatchIds = new Set(realMatches.map((item) => item.id));
 
   const latestLikedSwipeByProfile = new Map<string, string>();
-
   for (const swipe of swipes ?? []) {
     if (!latestLikedSwipeByProfile.has(swipe.target_profile_id)) {
       latestLikedSwipeByProfile.set(swipe.target_profile_id, swipe.created_at);
     }
   }
 
-  const pendingLikes: CandidateCard[] = Array.from(
+  const pendingLikes: PendingRecord[] = Array.from(
     latestLikedSwipeByProfile.entries(),
-  ).reduce<CandidateCard[]>((result, [targetProfileId, createdAt]) => {
-    if (realMatchIds.has(targetProfileId)) {
-      return result;
-    }
+  ).reduce<PendingRecord[]>((acc, [profileId, createdAt]) => {
+    if (realMatchIds.has(profileId)) return acc;
+    const candidate = demoCandidates.find((item) => item.id === profileId);
+    if (!candidate) return acc;
 
-    const candidate = demoCandidates.find((item) => item.id === targetProfileId);
-
-    if (!candidate) {
-      return result;
-    }
-
-    result.push({
-      ...candidate,
-      createdAt,
-      lastReadAt: null,
-    });
-
-    return result;
+    acc.push({ ...candidate, createdAt });
+    return acc;
   }, []);
+
+  let unreadCount = 0;
+
+  for (const match of realMatches) {
+    if (
+      match.lastMessage?.sender === "them" &&
+      (!match.lastReadAt ||
+        new Date(match.lastMessage.createdAt).getTime() >
+          new Date(match.lastReadAt).getTime())
+    ) {
+      unreadCount += 1;
+    }
+  }
 
   return (
     <AppShell
-      title="Matches"
-      description="Здесь будут взаимные мэтчи, анонимные интро-чаты и переход в обычный диалог после mutual unlock."
       pathname="/matches"
+      unreadMatches={unreadCount}
+      userLabel={userLabel}
     >
-      <div className="space-y-6">
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-sm text-white/45">Current stage</p>
-          <p className="mt-2 text-white/80">
-            Теперь unread badge зависит не только от автора последнего сообщения, но и от того, был ли чат уже открыт.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Matches"
+        title="Твои взаимные"
+        description="Чаты с теми, с кем симпатия оказалась взаимной. Остальные симпатии ждут своего часа."
+      />
 
-        <section className="space-y-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/40">
-              Real matches
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold">Mutual connection</h2>
+      <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Чаты</h2>
+            <span className="text-xs text-white/40">
+              {realMatches.length > 0
+                ? `${realMatches.length} mutual`
+                : "пока пусто"}
+            </span>
           </div>
 
           {realMatches.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {realMatches.map((profile) => {
-                const hasUnreadReply =
-                  profile.lastMessage?.sender === "them" &&
-                  (!profile.lastReadAt ||
-                    new Date(profile.lastMessage.createdAt).getTime() >
-                      new Date(profile.lastReadAt).getTime());
-
-                return (
-                  <div
-                    key={profile.id}
-                    className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/5 p-6"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm text-emerald-200/80">Mutual match</p>
-                        <h3 className="mt-2 text-2xl font-semibold">
-                          {profile.name}, {profile.age}
-                        </h3>
-                        <p className="mt-2 text-white/55">{profile.city}</p>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="rounded-full border border-emerald-400/20 px-3 py-1 text-xs text-emerald-200/80">
-                          It&apos;s a match
-                        </div>
-
-                        {hasUnreadReply ? (
-                          <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white">
-                            New reply
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="mt-5 space-y-3">
-                      <div className="rounded-2xl bg-white/5 p-4">
-                        <p className="text-sm text-white/45">Last message</p>
-
-                        {profile.lastMessage ? (
-                          <>
-                            <p className="mt-2 text-white/85">
-                              {profile.lastMessage.sender === "me"
-                                ? "You: "
-                                : `${profile.name}: `}
-                              {profile.lastMessage.body}
-                            </p>
-                            <p className="mt-2 text-xs text-white/45">
-                              {new Date(profile.lastMessage.createdAt).toLocaleString()}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="mt-2 text-white/60">No messages yet.</p>
-                        )}
-                      </div>
-
-                      <div className="rounded-2xl bg-white/5 p-4">
-                        <p className="text-sm text-white/45">Games</p>
-                        <p className="mt-2 text-white/85">{profile.games.join(", ")}</p>
-                      </div>
-
-                      <div className="rounded-2xl bg-white/5 p-4">
-                        <p className="text-sm text-white/45">Vibe tags</p>
-                        <p className="mt-2 text-white/85">
-                          {profile.vibeTags.join(", ")}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Link
-                      href={`/matches/${profile.id}/open`}
-                      className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
-                    >
-                      Open chat
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
+            <ul className="soul-surface divide-y divide-white/5 overflow-hidden">
+              {realMatches.map((match) => (
+                <MatchRow key={match.id} match={match} />
+              ))}
+            </ul>
           ) : (
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-              <p className="text-sm text-white/45">No matches yet</p>
-              <h3 className="mt-2 text-2xl font-semibold">
-                Mutual matches will appear here
-              </h3>
-              <p className="mt-4 max-w-2xl text-white/60">
-                In this demo version, some profiles already like you back. When you like
-                them, they move into the real matches section.
-              </p>
-            </div>
+            <EmptyState
+              title="Mutual matches появятся здесь"
+              text="Как только твоя симпатия станет взаимной — откроется приватный чат. А пока продолжай Discover."
+              actionHref="/discover"
+              actionText="В Discover"
+            />
           )}
         </section>
 
-        <section className="space-y-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/40">
-              Pending likes
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold">Liked by you</h2>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Ожидают ответа</h2>
+            <span className="text-xs text-white/40">
+              {pendingLikes.length > 0 ? `${pendingLikes.length} likes` : ""}
+            </span>
           </div>
 
           {pendingLikes.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {pendingLikes.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6"
+            <ul className="soul-surface divide-y divide-white/5 overflow-hidden">
+              {pendingLikes.map((pending) => (
+                <li
+                  key={pending.id}
+                  className="flex items-center gap-3 px-4 py-3"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-white/45">Liked profile</p>
-                      <h3 className="mt-2 text-2xl font-semibold">
-                        {profile.name}, {profile.age}
-                      </h3>
-                      <p className="mt-2 text-white/55">{profile.city}</p>
-                    </div>
-
-                    <div className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/65">
-                      Waiting
-                    </div>
+                  <Avatar name={pending.name} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-medium">
+                      {pending.name}, {pending.age}
+                    </p>
+                    <p className="truncate text-xs text-white/45">
+                      {pending.city} · {relativeTime(pending.createdAt)}
+                    </p>
                   </div>
-
-                  <div className="mt-5 space-y-3">
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Looking for</p>
-                      <p className="mt-2 text-white/85">{profile.lookingFor}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/5 p-4">
-                      <p className="text-sm text-white/45">Liked at</p>
-                      <p className="mt-2 text-white/75">
-                        {new Date(profile.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                  <span className="soul-chip !text-[10px] !py-0.5">
+                    waiting
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-              <p className="text-sm text-white/45">No pending likes</p>
-              <h3 className="mt-2 text-2xl font-semibold">
-                Profiles you like without a mutual match will appear here
-              </h3>
+            <div className="soul-surface p-5 text-sm text-white/55">
+              Пока ты никого не лайкнул(а). Открой Discover и попробуй.
             </div>
           )}
+
+          <div className="soul-surface p-5 text-sm text-white/60">
+            <div className="flex items-center gap-2 text-white">
+              <SparkleIcon size={14} />
+              <p className="font-medium">Как работает мэтч</p>
+            </div>
+            <ol className="mt-3 list-decimal space-y-1 pl-5 text-white/55">
+              <li>Ты лайкаешь человека в Discover.</li>
+              <li>Если он тоже лайкнул — открывается приватный чат.</li>
+              <li>Общайтесь в своём ритме, без давления.</li>
+            </ol>
+          </div>
         </section>
       </div>
     </AppShell>
+  );
+}
+
+function MatchRow({ match }: { match: MatchRecord }) {
+  const hasUnread =
+    match.lastMessage?.sender === "them" &&
+    (!match.lastReadAt ||
+      new Date(match.lastMessage.createdAt).getTime() >
+        new Date(match.lastReadAt).getTime());
+
+  const lastMessagePreview = match.lastMessage
+    ? `${match.lastMessage.sender === "me" ? "Ты: " : ""}${match.lastMessage.body}`
+    : "Скажи «привет» первым.";
+
+  return (
+    <li className="transition hover:bg-white/[0.03]">
+      <Link
+        href={`/matches/${match.id}/open`}
+        className="flex items-center gap-3 px-4 py-3"
+      >
+        <Avatar name={match.name} size={52} showStatus={match.online === "online"} />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-[15px] font-medium">
+              {match.name}, {match.age}
+            </p>
+            <span className="shrink-0 text-[11px] text-white/40">
+              {match.lastMessage
+                ? relativeTime(match.lastMessage.createdAt)
+                : relativeTime(match.createdAt)}
+            </span>
+          </div>
+          <p
+            className={`mt-1 truncate text-sm ${
+              hasUnread ? "font-medium text-white" : "text-white/55"
+            }`}
+          >
+            {lastMessagePreview}
+          </p>
+        </div>
+
+        {hasUnread ? (
+          <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-gradient-to-br from-violet-400 to-pink-400" />
+        ) : null}
+      </Link>
+    </li>
+  );
+}
+
+function EmptyState({
+  title,
+  text,
+  actionHref,
+  actionText,
+}: {
+  title: string;
+  text: string;
+  actionHref: string;
+  actionText: string;
+}) {
+  return (
+    <div className="soul-surface flex flex-col items-start gap-3 p-6">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400/20 to-pink-400/20 text-white/80">
+        <HeartIcon size={18} />
+      </div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-sm leading-6 text-white/55">{text}</p>
+      <Link href={actionHref} className="soul-btn soul-btn--secondary mt-1">
+        <MessageIcon size={14} />
+        {actionText}
+      </Link>
+    </div>
   );
 }
